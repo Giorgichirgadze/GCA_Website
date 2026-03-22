@@ -11,14 +11,14 @@ const observer = new IntersectionObserver(entries => {
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
 // ── LIGHTBOX
-const lightbox       = document.getElementById('lightbox');
-const lbImg          = document.getElementById('lightbox-img');
-const lbTitle        = document.getElementById('lightbox-title');
-const lbLocation     = document.getElementById('lightbox-location');
-const lbDescription  = document.getElementById('lightbox-description');
-const lbCounter      = document.getElementById('lightbox-counter');
-const lbPrev         = document.getElementById('lb-prev');
-const lbNext         = document.getElementById('lb-next');
+const lightbox      = document.getElementById('lightbox');
+const lbImg         = document.getElementById('lightbox-img');
+const lbTitle       = document.getElementById('lightbox-title');
+const lbLocation    = document.getElementById('lightbox-location');
+const lbDescription = document.getElementById('lightbox-description');
+const lbCounter     = document.getElementById('lightbox-counter');
+const lbPrev        = document.getElementById('lb-prev');
+const lbNext        = document.getElementById('lb-next');
 
 let photos  = [];
 let current = 0;
@@ -26,11 +26,9 @@ let current = 0;
 function openGallery(item) {
   photos  = item.dataset.photos.split(',').map(p => p.trim());
   current = 0;
-
   lbTitle.textContent       = item.dataset.title;
   lbLocation.textContent    = item.dataset.location;
   lbDescription.textContent = item.dataset.description || '';
-
   showPhoto(0);
   lightbox.classList.add('active');
   document.body.style.overflow = 'hidden';
@@ -42,11 +40,7 @@ function showPhoto(index) {
     lbImg.src = photos[index];
     lbImg.classList.remove('fade');
   }, 200);
-
-  lbCounter.textContent = photos.length > 1
-    ? `${index + 1} / ${photos.length}`
-    : '';
-
+  lbCounter.textContent = photos.length > 1 ? `${index + 1} / ${photos.length}` : '';
   lbPrev.disabled = index === 0;
   lbNext.disabled = index === photos.length - 1;
 }
