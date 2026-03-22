@@ -73,3 +73,4 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight' && current < photos.length - 1) showPhoto(++current);
   if (e.key === 'ArrowLeft'  && current > 0)                 showPhoto(--current);
 });
+
