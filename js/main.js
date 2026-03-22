@@ -1,29 +1,3 @@
-// ── CURSOR
-const cursor = document.getElementById('cursor');
-
-document.addEventListener('mousemove', e => {
-  cursor.style.left = e.clientX + 'px';
-  cursor.style.top  = e.clientY + 'px';
-});
-
-// cursor hover effect
-document.querySelectorAll('a, .grid-item, button').forEach(el => {
-  el.addEventListener('mouseenter', () => cursor.classList.add('expanded'));
-  el.addEventListener('mouseleave', () => cursor.classList.remove('expanded'));
-});
-
-// cursor თეთრი — მუქ სექციებზე
-document.querySelectorAll('#contact, footer').forEach(el => {
-  el.addEventListener('mouseenter', () => {
-    cursor.style.background = '#f5f4f0';
-    cursor.style.color = '#f5f4f0';
-  });
-  el.addEventListener('mouseleave', () => {
-    cursor.style.background = '#0a0a0a';
-    cursor.style.color = '#0a0a0a';
-  });
-});
-
 // ── NAV SCROLL
 window.addEventListener('scroll', () => {
   document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
@@ -31,35 +5,77 @@ window.addEventListener('scroll', () => {
 
 // ── REVEAL ON SCROLL
 const observer = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) entry.target.classList.add('visible');
-  });
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: 0.12 });
 
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
 // ── LIGHTBOX
-const lightbox    = document.getElementById('lightbox');
-const lightboxImg = document.getElementById('lightbox-img');
+const lightbox       = document.getElementById('lightbox');
+const lbImg          = document.getElementById('lightbox-img');
+const lbTitle        = document.getElementById('lightbox-title');
+const lbLocation     = document.getElementById('lightbox-location');
+const lbDescription  = document.getElementById('lightbox-description');
+const lbCounter      = document.getElementById('lightbox-counter');
+const lbPrev         = document.getElementById('lb-prev');
+const lbNext         = document.getElementById('lb-next');
 
-function openLightbox(src) {
-  lightboxImg.src = src;
+let photos  = [];
+let current = 0;
+
+function openGallery(item) {
+  photos  = item.dataset.photos.split(',').map(p => p.trim());
+  current = 0;
+
+  lbTitle.textContent       = item.dataset.title;
+  lbLocation.textContent    = item.dataset.location;
+  lbDescription.textContent = item.dataset.description || '';
+
+  showPhoto(0);
   lightbox.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
 
-function closeLightbox() {
-  lightbox.classList.remove('active');
-  lightboxImg.src = '';
-  document.body.style.overflow = '';
+function showPhoto(index) {
+  lbImg.classList.add('fade');
+  setTimeout(() => {
+    lbImg.src = photos[index];
+    lbImg.classList.remove('fade');
+  }, 200);
+
+  lbCounter.textContent = photos.length > 1
+    ? `${index + 1} / ${photos.length}`
+    : '';
+
+  lbPrev.disabled = index === 0;
+  lbNext.disabled = index === photos.length - 1;
 }
 
-document.querySelectorAll('.grid-item img').forEach(img => {
-  img.addEventListener('click', () => openLightbox(img.src));
+function closeLightbox() {
+  lightbox.classList.remove('active');
+  document.body.style.overflow = '';
+  setTimeout(() => { lbImg.src = ''; }, 300);
+}
+
+document.querySelectorAll('.grid-item').forEach(item => {
+  item.addEventListener('click', () => openGallery(item));
+});
+
+lbPrev.addEventListener('click', e => {
+  e.stopPropagation();
+  if (current > 0) showPhoto(--current);
+});
+lbNext.addEventListener('click', e => {
+  e.stopPropagation();
+  if (current < photos.length - 1) showPhoto(++current);
 });
 
 document.getElementById('lightbox-overlay').addEventListener('click', closeLightbox);
 document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeLightbox();
+  if (!lightbox.classList.contains('active')) return;
+  if (e.key === 'Escape')     closeLightbox();
+  if (e.key === 'ArrowRight' && current < photos.length - 1) showPhoto(++current);
+  if (e.key === 'ArrowLeft'  && current > 0)                 showPhoto(--current);
 });
