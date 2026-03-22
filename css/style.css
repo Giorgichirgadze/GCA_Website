@@ -435,10 +435,34 @@ footer span {
 
 /* ── MOBILE ── */
 @media (max-width: 900px) {
-  #lightbox-content { flex-direction: column; width: 95vw; max-height: 92vh; }
-  #lightbox-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(245,244,240,0.08); padding: 20px 24px; }
-  #lightbox-description { display: none; }
-  #lightbox-counter { margin-top: 8px; }
+  #lightbox-content {
+    flex-direction: column;
+    width: 95vw;
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+
+  /* sidebar პირველი — ზემოთ */
+  #lightbox-sidebar {
+    order: 1;
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid rgba(245,244,240,0.08);
+    padding: 24px;
+  }
+
+  /* ფოტო მეორე — ქვემოთ */
+  #lightbox-photo-wrap {
+    order: 2;
+    min-height: 50vw;
+  }
+
+  /* აღწერა ჩანს */
+  #lightbox-description {
+    display: block;
+  }
+
+  #lightbox-counter { margin-top: 16px; }
 }
 @media (max-width: 768px) {
   /* NAV — ლოგო + ლინკები ვერტიკალურად */
