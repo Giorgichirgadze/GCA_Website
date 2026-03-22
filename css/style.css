@@ -47,7 +47,7 @@ nav.scrolled { border-color: var(--border); }
   display: flex; gap: 36px; list-style: none;
 }
 .nav-links a {
-  font-size: 16px;
+  font-size: 13px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   text-decoration: none;
