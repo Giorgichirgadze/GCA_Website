@@ -18,6 +18,7 @@ const clearFormBtn = document.getElementById('clear-form-btn');
 const publishBtn = document.getElementById('publish-btn');
 const reloadBtn = document.getElementById('reload-btn');
 
+const GITHUB_CFG_STORAGE_KEY = 'gca_admin_cfg_v2';
 let projects = [];
 
 function setStatus(el, text) {
@@ -32,26 +33,64 @@ function saveGithubConfig() {
     token: tokenInput.value.trim()
   };
   try {
-    localStorage.setItem('gca_admin_cfg', JSON.stringify(cfg));
+    const serialized = JSON.stringify(cfg);
+    localStorage.setItem(GITHUB_CFG_STORAGE_KEY, serialized);
+    sessionStorage.setItem(GITHUB_CFG_STORAGE_KEY, serialized);
   } catch {}
+}
+
+function applyGithubConfig(cfg) {
+  if (!cfg) return;
+  if (cfg.owner) ownerInput.value = cfg.owner;
+  if (cfg.repo) repoInput.value = cfg.repo;
+  if (cfg.branch) branchInput.value = cfg.branch;
+  if (cfg.token) tokenInput.value = cfg.token;
+}
+
+function inferGithubConfigFromLocation() {
+  try {
+    const host = window.location.hostname || '';
+    const path = window.location.pathname || '';
+    const isGithubPages = host.endsWith('.github.io');
+    const firstPathSegment = path.split('/').filter(Boolean)[0] || '';
+    if (!isGithubPages || !firstPathSegment) return null;
+    const owner = host.split('.')[0];
+    const repo = firstPathSegment;
+    return { owner, repo, branch: 'main', token: '' };
+  } catch {
+    return null;
+  }
 }
 
 function loadGithubConfig() {
   try {
-    const raw = localStorage.getItem('gca_admin_cfg');
-    if (!raw) return;
-    const cfg = JSON.parse(raw);
-    if (cfg.owner) ownerInput.value = cfg.owner;
-    if (cfg.repo) repoInput.value = cfg.repo;
-    if (cfg.branch) branchInput.value = cfg.branch;
-    if (cfg.token) tokenInput.value = cfg.token;
+    const raw = localStorage.getItem(GITHUB_CFG_STORAGE_KEY) || sessionStorage.getItem(GITHUB_CFG_STORAGE_KEY);
+    if (raw) {
+      applyGithubConfig(JSON.parse(raw));
+      return true;
+    }
   } catch {}
+  return false;
+}
+
+function hydrateGithubConfig() {
+  const hasSaved = loadGithubConfig();
+  if (!hasSaved) {
+    const inferred = inferGithubConfigFromLocation();
+    applyGithubConfig(inferred);
+    if (inferred) saveGithubConfig();
+  }
+  if (!branchInput.value.trim()) {
+    branchInput.value = 'main';
+    saveGithubConfig();
+  }
 }
 
 ownerInput.addEventListener('input', saveGithubConfig);
 repoInput.addEventListener('input', saveGithubConfig);
 branchInput.addEventListener('input', saveGithubConfig);
 tokenInput.addEventListener('input', saveGithubConfig);
+window.addEventListener('beforeunload', saveGithubConfig);
 
 function clearForm() {
   titleInput.value = '';
@@ -95,6 +134,31 @@ async function loadProjects() {
 
 function readPhotos() {
   return Array.from(photosInput.files || []);
+}
+
+function normalizeText(value) {
+  return (value || '').trim().toLowerCase();
+}
+
+function findExistingProjectIndex(title, location) {
+  const targetTitle = normalizeText(title);
+  const targetLocation = normalizeText(location);
+  return projects.findIndex(project =>
+    normalizeText(project.title) === targetTitle &&
+    normalizeText(project.location) === targetLocation
+  );
+}
+
+function mergePhotoPaths(existingPhotos, newPhotos) {
+  const seen = new Set(existingPhotos || []);
+  const merged = [...(existingPhotos || [])];
+  (newPhotos || []).forEach(path => {
+    if (!seen.has(path)) {
+      seen.add(path);
+      merged.push(path);
+    }
+  });
+  return merged;
 }
 
 function getGithubConfig() {
@@ -230,8 +294,8 @@ addProjectBtn.addEventListener('click', async () => {
     const description = descriptionInput.value.trim();
     const selectedPhotos = readPhotos();
 
-    if (!title || !location || !description) {
-      throw new Error('სათაური, ლოკაცია და აღწერა აუცილებელია');
+    if (!title || !location) {
+      throw new Error('სათაური და ლოკაცია აუცილებელია');
     }
     if (!selectedPhotos.length) {
       throw new Error('მინიმუმ 1 ფოტო უნდა ატვირთო');
@@ -239,19 +303,37 @@ addProjectBtn.addEventListener('click', async () => {
 
     const cfg = requireGithubConfig();
     await verifyRepoAccess(cfg);
+    saveGithubConfig();
     setStatus(statusAuth, 'GitHub კავშირი დადასტურდა');
     setStatus(statusForm, 'ფოტოები იტვირთება GitHub-ზე...');
     const uploadedPaths = await uploadImages(cfg, selectedPhotos);
 
-    projects.unshift({
-      title,
-      location,
-      description,
-      photos: uploadedPaths
-    });
+    const existingProjectIndex = findExistingProjectIndex(title, location);
+    if (existingProjectIndex >= 0) {
+      const existingProject = projects[existingProjectIndex];
+      existingProject.photos = mergePhotoPaths(existingProject.photos, uploadedPaths);
+      if (description) {
+        existingProject.description = description;
+      }
+    } else {
+      if (!description) {
+        throw new Error('ახალი პროექტისთვის აღწერა აუცილებელია');
+      }
+      projects.unshift({
+        title,
+        location,
+        description,
+        photos: uploadedPaths
+      });
+    }
+
     renderProjects();
     clearForm();
-    setStatus(statusForm, 'პროექტი დაემატა სიაში. ახლა დააჭირე "GitHub-ზე გამოქვეყნება"');
+    if (existingProjectIndex >= 0) {
+      setStatus(statusForm, 'ფოტოები დაემატა უკვე არსებულ პროექტს. ახლა დააჭირე "GitHub-ზე გამოქვეყნება"');
+    } else {
+      setStatus(statusForm, 'პროექტი დაემატა სიაში. ახლა დააჭირე "GitHub-ზე გამოქვეყნება"');
+    }
   } catch (error) {
     setStatus(statusForm, formatGithubError(error));
   }
@@ -275,6 +357,7 @@ publishBtn.addEventListener('click', async () => {
   try {
     const cfg = requireGithubConfig();
     await verifyRepoAccess(cfg);
+    saveGithubConfig();
     setStatus(statusAuth, 'GitHub კავშირი დადასტურდა');
     setStatus(statusPublish, 'projects.json ინახება GitHub-ზე...');
     await publishProjects(cfg);
@@ -284,8 +367,15 @@ publishBtn.addEventListener('click', async () => {
   }
 });
 
-loadProjects()
-  .then(() => setStatus(statusAuth, 'შეავსე GitHub Owner/Repo/Token და დაიწყე დამატება'))
-  .catch(error => setStatus(statusAuth, error.message));
+hydrateGithubConfig();
 
-loadGithubConfig();
+loadProjects()
+  .then(() => {
+    const cfg = getGithubConfig();
+    if (cfg.owner && cfg.repo && cfg.token) {
+      setStatus(statusAuth, 'GitHub კავშირი დამახსოვრებულია');
+    } else {
+      setStatus(statusAuth, 'GitHub კავშირი ავტომატურად დაიმახსოვრება ერთხელ შევსების შემდეგ');
+    }
+  })
+  .catch(error => setStatus(statusAuth, error.message));
