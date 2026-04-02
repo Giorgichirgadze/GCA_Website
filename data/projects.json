@@ -1,5 +1,6 @@
 [
   {
+<<<<<<< HEAD
     "title": "2",
     "location": "75",
     "description": "75",
@@ -16,3 +17,77 @@
     ]
   }
 ]
+=======
+    "title": "გამაჯანსაღებელი ცენტრი",
+    "location": "წყალტუბო",
+    "description": "გამაჯანსარებელი ცენტრი ქალაქი წყალტუბო",
+    "photos": [
+      "images/f1/1.jpeg",
+      "images/f1/2.jpeg",
+      "images/f1/3.jpeg"
+    ]
+  },
+  {
+    "title": "მრავალბინიანი საცხოვრებელი სახლი",
+    "location": "თბილისი",
+    "description": "მრავალბინიანი საცხოვრებელი სახლი ქალაქი თბილისი",
+    "photos": [
+      "images/f2/1.jpeg",
+      "images/f2/2.jpeg",
+      "images/f2/3.jpeg",
+      "images/f2/4.jpeg"
+    ]
+  },
+  {
+    "title": "საცხოვრებელი სახლი",
+    "location": "ქუთაისი",
+    "description": "ერთბინიანი საცხოვრებელი სახლი ქალაქი ქუთაისი 300 კვადრატი",
+    "photos": [
+      "images/f3/1.jpeg",
+      "images/f3/2.jpeg",
+      "images/f3/3.jpeg"
+    ]
+  },
+  {
+    "title": "საცხოვრებელი სახლი",
+    "location": "ქუთაისი",
+    "description": "ერთბინიანი საცხოვრებელი სახლი ქალაქი ქუთაისი 280 კვადრატი",
+    "photos": [
+      "images/f4/2.jpeg",
+      "images/f4/3.jpeg",
+      "images/f4/4.jpeg",
+      "images/f4/1.jpeg"
+    ]
+  },
+  {
+    "title": "საცხოვრებელი სახლი",
+    "location": "ქუთაისი",
+    "description": "ერთბინიანი საცხოვრებელი სახლი ქალაქი ქუთაისი 300 კვადრატი",
+    "photos": [
+      "images/f5/1.jpeg",
+      "images/f5/2.jpeg",
+      "images/f5/3.jpeg"
+    ]
+  },
+  {
+    "title": "საცხოვრებელი სახლი",
+    "location": "წყალტუბო",
+    "description": "ერთბინიანი საცხოვრებელი სახლი ქალაქი წყალტუბო 280 კვადრატი",
+    "photos": [
+      "images/f6/1.jpeg",
+      "images/f6/2.jpeg",
+      "images/f6/3.jpeg"
+    ]
+  },
+  {
+    "title": "საცხოვრებელი სახლი",
+    "location": "გორი",
+    "description": "ერთბინიანი საცხოვრებელი სახლი ქალაქი გორი სოფელი ტირძნისი 150 კვადრატი",
+    "photos": [
+      "images/f7/1.jpeg",
+      "images/f7/2.jpeg",
+      "images/f7/3.jpeg"
+    ]
+  }
+]
+>>>>>>> a67e297 (local backup before syncing origin)

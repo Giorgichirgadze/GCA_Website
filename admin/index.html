@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GCA Admin</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f1115;
+      color: #e7e9ee;
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+    }
+    h1, h2 { margin: 0 0 12px; }
+    .card {
+      background: #161a22;
+      border: 1px solid #2a3040;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+      color: #b7c0d8;
+    }
+    input, textarea, button {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #394156;
+      background: #10131a;
+      color: #e7e9ee;
+      padding: 10px;
+      font-size: 14px;
+    }
+    textarea { min-height: 80px; resize: vertical; }
+    button {
+      cursor: pointer;
+      background: #2d67ff;
+      border: none;
+      font-weight: 600;
+    }
+    button.secondary { background: #2b3142; }
+    .actions {
+      display: flex;
+      gap: 10px;
+    }
+    .actions button { width: auto; padding: 10px 16px; }
+    .projects {
+      display: grid;
+      gap: 10px;
+    }
+    .project-item {
+      border: 1px solid #30384c;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      background: #121722;
+    }
+    .project-meta { line-height: 1.4; }
+    .project-title { font-weight: 700; }
+    .project-sub { color: #b7c0d8; font-size: 13px; }
+    .project-item button {
+      width: auto;
+      background: #7d2132;
+    }
+    .status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #9fb5ff;
+      min-height: 18px;
+    }
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+      .actions { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>GCA პროექტების პანელი</h1>
+    <div class="card">
+      <h2>GitHub კავშირი</h2>
+      <div class="grid">
+        <div>
+          <label for="gh-owner">Owner</label>
+          <input id="gh-owner" placeholder="მაგ: kobal" />
+        </div>
+        <div>
+          <label for="gh-repo">Repo</label>
+          <input id="gh-repo" placeholder="მაგ: GCA" />
+        </div>
+        <div>
+          <label for="gh-branch">Branch</label>
+          <input id="gh-branch" value="main" />
+        </div>
+        <div>
+          <label for="gh-token">GitHub Token</label>
+          <input id="gh-token" type="password" placeholder="ghp_..." />
+        </div>
+      </div>
+      <div class="status" id="status-auth"></div>
+    </div>
+
+    <div class="card">
+      <h2>ახალი პროექტი</h2>
+      <div class="grid">
+        <div>
+          <label for="p-title">სათაური</label>
+          <input id="p-title" />
+        </div>
+        <div>
+          <label for="p-location">ლოკაცია</label>
+          <input id="p-location" />
+        </div>
+      </div>
+      <div style="margin-top:10px;">
+        <label for="p-description">აღწერა</label>
+        <textarea id="p-description"></textarea>
+      </div>
+      <div style="margin-top:10px;">
+        <label for="p-photos">ფოტოები</label>
+        <input id="p-photos" type="file" accept="image/*" multiple />
+      </div>
+      <div class="actions" style="margin-top:12px;">
+        <button id="add-project-btn" type="button">პროექტის დამატება სიაში</button>
+        <button id="clear-form-btn" class="secondary" type="button">გასუფთავება</button>
+      </div>
+      <div class="status" id="status-form"></div>
+    </div>
+
+    <div class="card">
+      <h2>მიმდინარე სია</h2>
+      <div class="projects" id="projects-list"></div>
+      <div class="actions" style="margin-top:14px;">
+        <button id="publish-btn" type="button">GitHub-ზე გამოქვეყნება</button>
+        <button id="reload-btn" class="secondary" type="button">საწყისი სიიდან ჩატვირთვა</button>
+      </div>
+      <div class="status" id="status-publish"></div>
+    </div>
+  </div>
+  <script src="../js/admin.js"></script>
+</body>
+</html>
