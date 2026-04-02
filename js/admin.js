@@ -175,28 +175,101 @@ function renderProjects() {
 
   projectsListEl.innerHTML = '';
   projects.forEach((project, index) => {
-    const row = document.createElement('div');
-    row.className = 'project-item';
-    row.innerHTML = `
+    const item = document.createElement('div');
+    item.className = 'project-item';
+
+    /* header row */
+    const header = document.createElement('div');
+    header.className = 'project-header';
+    header.innerHTML = `
       <div class="project-meta">
         <div class="project-title">${project.title}</div>
         <div class="project-sub">${project.location} • ${project.photos.length} ფოტო</div>
       </div>
-      <button type="button" data-index="${index}">წაშლა</button>
+      <div class="project-actions">
+        <button type="button" class="btn-expand">ფოტოები ▾</button>
+        <button type="button" class="btn-delete">წაშლა</button>
+      </div>
     `;
-    row.querySelector('button').addEventListener('click', async () => {
-      if (!confirm(`წავშალოთ "${project.title}"?`)) return;
-      projects.splice(index, 1);
-      renderProjects();
+
+    /* photos panel */
+    const photosPanel = document.createElement('div');
+    photosPanel.className = 'project-photos';
+    const photosGrid = document.createElement('div');
+    photosGrid.className = 'project-photos-grid';
+
+    (project.photos || []).forEach((photoPath, photoIndex) => {
+      const thumb = document.createElement('div');
+      thumb.className = 'gallery-thumb';
+
+      const img = document.createElement('img');
+      img.src = `../${photoPath}`;
+      img.alt = `ფოტო ${photoIndex + 1}`;
+      img.onerror = () => { img.style.background = '#1a1a2e'; img.alt = '?'; };
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'delete-photo-btn';
+      deleteBtn.textContent = '✕';
+      deleteBtn.type = 'button';
+      deleteBtn.title = 'ფოტოს წაშლა';
+      deleteBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!confirm(`წავშალოთ ფოტო "${photoPath}"?`)) return;
+        try {
+          const cfg = requireGithubConfig();
+          setStatus(statusPublish, 'ფოტო იშლება GitHub-დან...');
+          await deleteGithubFile(cfg, photoPath);
+          project.photos.splice(photoIndex, 1);
+          await saveProjectsJson(cfg);
+          renderProjects();
+          setStatus(statusPublish, '✅ ფოტო წაიშალა');
+        } catch (err) {
+          setStatus(statusPublish, '❌ ' + formatGithubError(err));
+        }
+      });
+
+      thumb.appendChild(img);
+      thumb.appendChild(deleteBtn);
+      photosGrid.appendChild(thumb);
+    });
+
+    photosPanel.appendChild(photosGrid);
+
+    /* expand toggle */
+    const expandBtn = header.querySelector('.btn-expand');
+    expandBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = photosPanel.classList.toggle('open');
+      expandBtn.textContent = isOpen ? 'ფოტოები ▴' : 'ფოტოები ▾';
+    });
+
+    /* gallery delete */
+    const deleteBtn = header.querySelector('.btn-delete');
+    deleteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm(`წავშალოთ მთელი გალერეა "${project.title}"?\nყველა ფოტო წაიშლება GitHub-დანაც.`)) return;
       try {
         const cfg = requireGithubConfig();
+        setStatus(statusPublish, 'გალერეა იშლება...');
+        /* delete all photos from GitHub */
+        for (let i = 0; i < project.photos.length; i++) {
+          setStatus(statusPublish, `ფოტო ${i + 1}/${project.photos.length} იშლება...`);
+          try {
+            await deleteGithubFile(cfg, project.photos[i]);
+          } catch { /* photo might not exist, skip */ }
+        }
+        projects.splice(index, 1);
         await saveProjectsJson(cfg);
-        setStatus(statusPublish, 'გალერეა წაიშალა და JSON განახლდა');
+        renderProjects();
+        setStatus(statusPublish, '✅ გალერეა სრულად წაიშალა');
       } catch (err) {
-        setStatus(statusPublish, 'წაიშალა სიიდან, მაგრამ JSON ვერ განახლდა: ' + err.message);
+        setStatus(statusPublish, '❌ ' + formatGithubError(err));
       }
     });
-    projectsListEl.appendChild(row);
+
+    item.appendChild(header);
+    item.appendChild(photosPanel);
+    projectsListEl.appendChild(item);
   });
 }
 
@@ -235,7 +308,9 @@ async function githubRequest(cfg, path, method = 'GET', body) {
     body: body ? JSON.stringify(body) : undefined
   });
 
-  const payload = await response.json();
+  /* DELETE returns 200 with body, handle empty responses too */
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : {};
   if (!response.ok) {
     throw new Error(payload.message || 'GitHub მოთხოვნა ჩავარდა');
   }
@@ -276,6 +351,17 @@ async function getFileSha(cfg, path) {
   } catch {
     return null;
   }
+}
+
+/* ── GitHub ფაილის წაშლა ── */
+async function deleteGithubFile(cfg, path) {
+  const sha = await getFileSha(cfg, path);
+  if (!sha) return; /* file doesn't exist */
+  await githubRequest(cfg, path, 'DELETE', {
+    message: `delete ${path}`,
+    sha,
+    branch: cfg.branch
+  });
 }
 
 /* ── ახალი საქაღალდის ნომრის პოვნა ── */
