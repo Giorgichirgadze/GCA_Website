@@ -53,11 +53,108 @@
       font-weight: 600;
     }
     button.secondary { background: #2b3142; }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
     .actions {
       display: flex;
       gap: 10px;
     }
     .actions button { width: auto; padding: 10px 16px; }
+
+    /* ── ფოტო preview ── */
+    .photo-drop {
+      border: 2px dashed #394156;
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      color: #7a8baa;
+      font-size: 14px;
+    }
+    .photo-drop:hover {
+      border-color: #2d67ff;
+      background: rgba(45, 103, 255, 0.05);
+    }
+    .photo-drop.dragover {
+      border-color: #2d67ff;
+      background: rgba(45, 103, 255, 0.1);
+    }
+    .photo-previews {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .photo-thumb {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #2a3040;
+    }
+    .photo-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .photo-thumb .remove-photo {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(180, 30, 50, 0.85);
+      border: none;
+      color: #fff;
+      font-size: 13px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .photo-thumb .remove-photo:hover {
+      background: #d32f2f;
+    }
+    .photo-count-label {
+      font-size: 12px;
+      color: #7a8baa;
+      margin-top: 6px;
+    }
+
+    /* ── პროგრესი ── */
+    .progress-wrap {
+      margin-top: 10px;
+      display: none;
+    }
+    .progress-wrap.active { display: block; }
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #1c2030;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #2d67ff, #5b8aff);
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .progress-text {
+      font-size: 12px;
+      color: #7a8baa;
+      margin-top: 4px;
+    }
+
+    /* ── პროექტების სია ── */
     .projects {
       display: grid;
       gap: 10px;
@@ -88,6 +185,7 @@
     @media (max-width: 760px) {
       .grid { grid-template-columns: 1fr; }
       .actions { flex-wrap: wrap; }
+      .photo-previews { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
     }
   </style>
 </head>
@@ -118,7 +216,7 @@
     </div>
 
     <div class="card">
-      <h2>ახალი პროექტი</h2>
+      <h2>ახალი გალერეის შექმნა</h2>
       <div class="grid">
         <div>
           <label for="p-title">სათაური</label>
@@ -134,22 +232,30 @@
         <textarea id="p-description"></textarea>
       </div>
       <div style="margin-top:10px;">
-        <label for="p-photos">ფოტოები</label>
-        <input id="p-photos" type="file" accept="image/*" multiple />
+        <label>ფოტოები</label>
+        <input id="p-photos" type="file" accept="image/*" multiple style="display:none;" />
+        <div class="photo-drop" id="photo-drop">
+          📷 დააჭირე ან ჩააგდე ფოტოები აქ
+        </div>
+        <div class="photo-count-label" id="photo-count"></div>
+        <div class="photo-previews" id="photo-previews"></div>
+      </div>
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="progress-text" id="progress-text"></div>
       </div>
       <div class="actions" style="margin-top:12px;">
-        <button id="add-project-btn" type="button">პროექტის დამატება სიაში</button>
+        <button id="upload-gallery-btn" type="button">🚀 გალერეის ატვირთვა</button>
         <button id="clear-form-btn" class="secondary" type="button">გასუფთავება</button>
       </div>
       <div class="status" id="status-form"></div>
     </div>
 
     <div class="card">
-      <h2>მიმდინარე სია</h2>
+      <h2>ატვირთული გალერეები</h2>
       <div class="projects" id="projects-list"></div>
       <div class="actions" style="margin-top:14px;">
-        <button id="publish-btn" type="button">GitHub-ზე გამოქვეყნება</button>
-        <button id="reload-btn" class="secondary" type="button">საწყისი სიიდან ჩატვირთვა</button>
+        <button id="reload-btn" class="secondary" type="button">განახლება</button>
       </div>
       <div class="status" id="status-publish"></div>
     </div>

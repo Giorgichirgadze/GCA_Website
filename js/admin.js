@@ -1,3 +1,4 @@
+/* ── DOM ── */
 const ownerInput = document.getElementById('gh-owner');
 const repoInput = document.getElementById('gh-repo');
 const branchInput = document.getElementById('gh-branch');
@@ -7,24 +8,32 @@ const titleInput = document.getElementById('p-title');
 const locationInput = document.getElementById('p-location');
 const descriptionInput = document.getElementById('p-description');
 const photosInput = document.getElementById('p-photos');
+const photoDrop = document.getElementById('photo-drop');
+const photoPreviewsEl = document.getElementById('photo-previews');
+const photoCountEl = document.getElementById('photo-count');
+
+const progressWrap = document.getElementById('progress-wrap');
+const progressFill = document.getElementById('progress-fill');
+const progressText = document.getElementById('progress-text');
 
 const projectsListEl = document.getElementById('projects-list');
 const statusAuth = document.getElementById('status-auth');
 const statusForm = document.getElementById('status-form');
 const statusPublish = document.getElementById('status-publish');
 
-const addProjectBtn = document.getElementById('add-project-btn');
+const uploadGalleryBtn = document.getElementById('upload-gallery-btn');
 const clearFormBtn = document.getElementById('clear-form-btn');
-const publishBtn = document.getElementById('publish-btn');
 const reloadBtn = document.getElementById('reload-btn');
 
-const GITHUB_CFG_STORAGE_KEY = 'gca_admin_cfg_v2';
 let projects = [];
+let selectedFiles = [];
 
+/* ── STATUS ── */
 function setStatus(el, text) {
   el.textContent = text;
 }
 
+/* ── GITHUB CONFIG ── */
 function saveGithubConfig() {
   const cfg = {
     owner: ownerInput.value.trim(),
@@ -33,133 +42,26 @@ function saveGithubConfig() {
     token: tokenInput.value.trim()
   };
   try {
-    const serialized = JSON.stringify(cfg);
-    localStorage.setItem(GITHUB_CFG_STORAGE_KEY, serialized);
-    sessionStorage.setItem(GITHUB_CFG_STORAGE_KEY, serialized);
+    localStorage.setItem('gca_admin_cfg', JSON.stringify(cfg));
   } catch {}
-}
-
-function applyGithubConfig(cfg) {
-  if (!cfg) return;
-  if (cfg.owner) ownerInput.value = cfg.owner;
-  if (cfg.repo) repoInput.value = cfg.repo;
-  if (cfg.branch) branchInput.value = cfg.branch;
-  if (cfg.token) tokenInput.value = cfg.token;
-}
-
-function inferGithubConfigFromLocation() {
-  try {
-    const host = window.location.hostname || '';
-    const path = window.location.pathname || '';
-    const isGithubPages = host.endsWith('.github.io');
-    const firstPathSegment = path.split('/').filter(Boolean)[0] || '';
-    if (!isGithubPages || !firstPathSegment) return null;
-    const owner = host.split('.')[0];
-    const repo = firstPathSegment;
-    return { owner, repo, branch: 'main', token: '' };
-  } catch {
-    return null;
-  }
 }
 
 function loadGithubConfig() {
   try {
-    const raw = localStorage.getItem(GITHUB_CFG_STORAGE_KEY) || sessionStorage.getItem(GITHUB_CFG_STORAGE_KEY);
-    if (raw) {
-      applyGithubConfig(JSON.parse(raw));
-      return true;
-    }
+    const raw = localStorage.getItem('gca_admin_cfg');
+    if (!raw) return;
+    const cfg = JSON.parse(raw);
+    if (cfg.owner) ownerInput.value = cfg.owner;
+    if (cfg.repo) repoInput.value = cfg.repo;
+    if (cfg.branch) branchInput.value = cfg.branch;
+    if (cfg.token) tokenInput.value = cfg.token;
   } catch {}
-  return false;
-}
-
-function hydrateGithubConfig() {
-  const hasSaved = loadGithubConfig();
-  if (!hasSaved) {
-    const inferred = inferGithubConfigFromLocation();
-    applyGithubConfig(inferred);
-    if (inferred) saveGithubConfig();
-  }
-  if (!branchInput.value.trim()) {
-    branchInput.value = 'main';
-    saveGithubConfig();
-  }
 }
 
 ownerInput.addEventListener('input', saveGithubConfig);
 repoInput.addEventListener('input', saveGithubConfig);
 branchInput.addEventListener('input', saveGithubConfig);
 tokenInput.addEventListener('input', saveGithubConfig);
-window.addEventListener('beforeunload', saveGithubConfig);
-
-function clearForm() {
-  titleInput.value = '';
-  locationInput.value = '';
-  descriptionInput.value = '';
-  photosInput.value = '';
-}
-
-function renderProjects() {
-  if (!projects.length) {
-    projectsListEl.innerHTML = '<div class="project-sub">სია ცარიელია</div>';
-    return;
-  }
-
-  projectsListEl.innerHTML = '';
-  projects.forEach((project, index) => {
-    const row = document.createElement('div');
-    row.className = 'project-item';
-    row.innerHTML = `
-      <div class="project-meta">
-        <div class="project-title">${project.title}</div>
-        <div class="project-sub">${project.location} • ${project.photos.length} ფოტო</div>
-      </div>
-      <button type="button" data-index="${index}">წაშლა</button>
-    `;
-    row.querySelector('button').addEventListener('click', () => {
-      projects.splice(index, 1);
-      renderProjects();
-      setStatus(statusForm, 'პროექტი წაიშალა სიიდან');
-    });
-    projectsListEl.appendChild(row);
-  });
-}
-
-async function loadProjects() {
-  const response = await fetch('../data/projects.json', { cache: 'no-store' });
-  if (!response.ok) throw new Error('projects.json ვერ ჩაიტვირთა');
-  projects = await response.json();
-  renderProjects();
-}
-
-function readPhotos() {
-  return Array.from(photosInput.files || []);
-}
-
-function normalizeText(value) {
-  return (value || '').trim().toLowerCase();
-}
-
-function findExistingProjectIndex(title, location) {
-  const targetTitle = normalizeText(title);
-  const targetLocation = normalizeText(location);
-  return projects.findIndex(project =>
-    normalizeText(project.title) === targetTitle &&
-    normalizeText(project.location) === targetLocation
-  );
-}
-
-function mergePhotoPaths(existingPhotos, newPhotos) {
-  const seen = new Set(existingPhotos || []);
-  const merged = [...(existingPhotos || [])];
-  (newPhotos || []).forEach(path => {
-    if (!seen.has(path)) {
-      seen.add(path);
-      merged.push(path);
-    }
-  });
-  return merged;
-}
 
 function getGithubConfig() {
   return {
@@ -178,6 +80,134 @@ function requireGithubConfig() {
   return cfg;
 }
 
+/* ── PHOTO SELECTION & PREVIEW ── */
+function addFiles(newFiles) {
+  for (const file of newFiles) {
+    if (file.type.startsWith('image/')) {
+      selectedFiles.push(file);
+    }
+  }
+  renderPhotoPreviews();
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  renderPhotoPreviews();
+}
+
+function renderPhotoPreviews() {
+  photoPreviewsEl.innerHTML = '';
+  photoCountEl.textContent = selectedFiles.length
+    ? `არჩეულია ${selectedFiles.length} ფოტო`
+    : '';
+
+  selectedFiles.forEach((file, i) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'photo-thumb';
+
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    img.onload = () => URL.revokeObjectURL(img.src);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-photo';
+    removeBtn.textContent = '✕';
+    removeBtn.type = 'button';
+    removeBtn.addEventListener('click', () => removeFile(i));
+
+    thumb.appendChild(img);
+    thumb.appendChild(removeBtn);
+    photoPreviewsEl.appendChild(thumb);
+  });
+}
+
+/* file input */
+photoDrop.addEventListener('click', () => photosInput.click());
+photosInput.addEventListener('change', () => {
+  addFiles(Array.from(photosInput.files));
+  photosInput.value = '';
+});
+
+/* drag & drop */
+photoDrop.addEventListener('dragover', e => {
+  e.preventDefault();
+  photoDrop.classList.add('dragover');
+});
+photoDrop.addEventListener('dragleave', () => {
+  photoDrop.classList.remove('dragover');
+});
+photoDrop.addEventListener('drop', e => {
+  e.preventDefault();
+  photoDrop.classList.remove('dragover');
+  addFiles(Array.from(e.dataTransfer.files));
+});
+
+/* ── FORM CLEAR ── */
+function clearForm() {
+  titleInput.value = '';
+  locationInput.value = '';
+  descriptionInput.value = '';
+  photosInput.value = '';
+  selectedFiles = [];
+  renderPhotoPreviews();
+  hideProgress();
+}
+
+/* ── PROGRESS ── */
+function showProgress(text, percent) {
+  progressWrap.classList.add('active');
+  progressText.textContent = text;
+  progressFill.style.width = percent + '%';
+}
+
+function hideProgress() {
+  progressWrap.classList.remove('active');
+  progressFill.style.width = '0%';
+  progressText.textContent = '';
+}
+
+/* ── PROJECTS LIST ── */
+function renderProjects() {
+  if (!projects.length) {
+    projectsListEl.innerHTML = '<div class="project-sub">გალერეები ცარიელია</div>';
+    return;
+  }
+
+  projectsListEl.innerHTML = '';
+  projects.forEach((project, index) => {
+    const row = document.createElement('div');
+    row.className = 'project-item';
+    row.innerHTML = `
+      <div class="project-meta">
+        <div class="project-title">${project.title}</div>
+        <div class="project-sub">${project.location} • ${project.photos.length} ფოტო</div>
+      </div>
+      <button type="button" data-index="${index}">წაშლა</button>
+    `;
+    row.querySelector('button').addEventListener('click', async () => {
+      if (!confirm(`წავშალოთ "${project.title}"?`)) return;
+      projects.splice(index, 1);
+      renderProjects();
+      try {
+        const cfg = requireGithubConfig();
+        await saveProjectsJson(cfg);
+        setStatus(statusPublish, 'გალერეა წაიშალა და JSON განახლდა');
+      } catch (err) {
+        setStatus(statusPublish, 'წაიშალა სიიდან, მაგრამ JSON ვერ განახლდა: ' + err.message);
+      }
+    });
+    projectsListEl.appendChild(row);
+  });
+}
+
+async function loadProjects() {
+  const response = await fetch('../data/projects.json', { cache: 'no-store' });
+  if (!response.ok) throw new Error('projects.json ვერ ჩაიტვირთა');
+  projects = await response.json();
+  renderProjects();
+}
+
+/* ── GITHUB API ── */
 function arrayBufferToBase64(buffer) {
   let binary = '';
   const bytes = new Uint8Array(buffer);
@@ -248,33 +278,84 @@ async function getFileSha(cfg, path) {
   }
 }
 
-function sanitizeFileName(name) {
-  return name
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9.\-_]/g, '');
+/* ── ახალი საქაღალდის ნომრის პოვნა ── */
+function getNextFolderNumber() {
+  let maxNum = 0;
+  for (const proj of projects) {
+    for (const photo of (proj.photos || [])) {
+      const match = photo.match(/^images\/(?:f|g)(\d+)\//);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+  }
+  return maxNum + 1;
 }
 
-async function uploadImages(cfg, files) {
-  const uploadedPaths = [];
-  for (let i = 0; i < files.length; i += 1) {
-    const file = files[i];
-    const cleanName = sanitizeFileName(file.name);
-    const stamp = Date.now();
-    const targetPath = `images/uploads/${stamp}-${i}-${cleanName}`;
+/* ── ერთიანი ატვირთვა ── */
+async function uploadGallery() {
+  setStatus(statusForm, '');
+
+  const title = titleInput.value.trim();
+  const location = locationInput.value.trim();
+  const description = descriptionInput.value.trim();
+
+  if (!title || !location) {
+    throw new Error('სათაური და ლოკაცია აუცილებელია');
+  }
+  if (!selectedFiles.length) {
+    throw new Error('მინიმუმ 1 ფოტო უნდა აირჩიო');
+  }
+
+  const cfg = requireGithubConfig();
+
+  /* 1. GitHub კავშირის შემოწმება */
+  showProgress('GitHub კავშირის შემოწმება...', 5);
+  await verifyRepoAccess(cfg);
+  setStatus(statusAuth, 'GitHub კავშირი დადასტურდა');
+
+  /* 2. საქაღალდის ნომერი */
+  const folderNum = getNextFolderNumber();
+  const folderPath = `images/g${folderNum}`;
+  const photoPaths = [];
+  const total = selectedFiles.length;
+
+  /* 3. ფოტოების ატვირთვა */
+  for (let i = 0; i < total; i++) {
+    const file = selectedFiles[i];
+    const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
+    const targetPath = `${folderPath}/${i + 1}.${ext}`;
+
+    showProgress(`ფოტო ${i + 1}/${total} იტვირთება...`, 10 + ((i / total) * 75));
+
     const buffer = await file.arrayBuffer();
     const content = arrayBufferToBase64(buffer);
     await githubRequest(cfg, targetPath, 'PUT', {
-      message: `upload ${targetPath}`,
+      message: `add ${targetPath}`,
       content,
       branch: cfg.branch
     });
-    uploadedPaths.push(targetPath);
+    photoPaths.push(targetPath);
   }
-  return uploadedPaths;
+
+  /* 4. projects.json განახლება */
+  showProgress('projects.json ინახება...', 90);
+
+  projects.unshift({
+    title,
+    location,
+    description,
+    photos: photoPaths
+  });
+
+  await saveProjectsJson(cfg);
+
+  showProgress('დასრულდა!', 100);
+  return folderNum;
 }
 
-async function publishProjects(cfg) {
+async function saveProjectsJson(cfg) {
   const path = 'data/projects.json';
   const content = JSON.stringify(projects, null, 2);
   const sha = await getFileSha(cfg, path);
@@ -286,56 +367,19 @@ async function publishProjects(cfg) {
   });
 }
 
-addProjectBtn.addEventListener('click', async () => {
+/* ── EVENT LISTENERS ── */
+uploadGalleryBtn.addEventListener('click', async () => {
   try {
-    setStatus(statusForm, '');
-    const title = titleInput.value.trim();
-    const location = locationInput.value.trim();
-    const description = descriptionInput.value.trim();
-    const selectedPhotos = readPhotos();
-
-    if (!title || !location) {
-      throw new Error('სათაური და ლოკაცია აუცილებელია');
-    }
-    if (!selectedPhotos.length) {
-      throw new Error('მინიმუმ 1 ფოტო უნდა ატვირთო');
-    }
-
-    const cfg = requireGithubConfig();
-    await verifyRepoAccess(cfg);
-    saveGithubConfig();
-    setStatus(statusAuth, 'GitHub კავშირი დადასტურდა');
-    setStatus(statusForm, 'ფოტოები იტვირთება GitHub-ზე...');
-    const uploadedPaths = await uploadImages(cfg, selectedPhotos);
-
-    const existingProjectIndex = findExistingProjectIndex(title, location);
-    if (existingProjectIndex >= 0) {
-      const existingProject = projects[existingProjectIndex];
-      existingProject.photos = mergePhotoPaths(existingProject.photos, uploadedPaths);
-      if (description) {
-        existingProject.description = description;
-      }
-    } else {
-      if (!description) {
-        throw new Error('ახალი პროექტისთვის აღწერა აუცილებელია');
-      }
-      projects.unshift({
-        title,
-        location,
-        description,
-        photos: uploadedPaths
-      });
-    }
-
+    uploadGalleryBtn.disabled = true;
+    const folderNum = await uploadGallery();
     renderProjects();
     clearForm();
-    if (existingProjectIndex >= 0) {
-      setStatus(statusForm, 'ფოტოები დაემატა უკვე არსებულ პროექტს. ახლა დააჭირე "GitHub-ზე გამოქვეყნება"');
-    } else {
-      setStatus(statusForm, 'პროექტი დაემატა სიაში. ახლა დააჭირე "GitHub-ზე გამოქვეყნება"');
-    }
+    setStatus(statusForm, `✅ გალერეა g${folderNum} წარმატებით აიტვირთა!`);
   } catch (error) {
-    setStatus(statusForm, formatGithubError(error));
+    setStatus(statusForm, '❌ ' + formatGithubError(error));
+    hideProgress();
+  } finally {
+    uploadGalleryBtn.disabled = false;
   }
 });
 
@@ -347,35 +391,15 @@ clearFormBtn.addEventListener('click', () => {
 reloadBtn.addEventListener('click', async () => {
   try {
     await loadProjects();
-    setStatus(statusPublish, 'საწყისი მონაცემები ჩაიტვირთა');
+    setStatus(statusPublish, 'მონაცემები განახლდა');
   } catch (error) {
     setStatus(statusPublish, error.message);
   }
 });
 
-publishBtn.addEventListener('click', async () => {
-  try {
-    const cfg = requireGithubConfig();
-    await verifyRepoAccess(cfg);
-    saveGithubConfig();
-    setStatus(statusAuth, 'GitHub კავშირი დადასტურდა');
-    setStatus(statusPublish, 'projects.json ინახება GitHub-ზე...');
-    await publishProjects(cfg);
-    setStatus(statusPublish, 'წარმატებით გამოქვეყნდა. საიტი განახლდება commit-ის შემდეგ.');
-  } catch (error) {
-    setStatus(statusPublish, formatGithubError(error));
-  }
-});
-
-hydrateGithubConfig();
-
+/* ── INIT ── */
 loadProjects()
-  .then(() => {
-    const cfg = getGithubConfig();
-    if (cfg.owner && cfg.repo && cfg.token) {
-      setStatus(statusAuth, 'GitHub კავშირი დამახსოვრებულია');
-    } else {
-      setStatus(statusAuth, 'GitHub კავშირი ავტომატურად დაიმახსოვრება ერთხელ შევსების შემდეგ');
-    }
-  })
+  .then(() => setStatus(statusAuth, 'შეავსე GitHub Owner/Repo/Token და დაიწყე გალერეის შექმნა'))
   .catch(error => setStatus(statusAuth, error.message));
+
+loadGithubConfig();
