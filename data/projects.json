@@ -1,5 +1,15 @@
 [
   {
+    "title": "საცხივრებელი სახლი",
+    "location": "ქუთაისი",
+    "description": "",
+    "photos": [
+      "images/g8/1.png",
+      "images/g8/2.png",
+      "images/g8/3.png"
+    ]
+  },
+  {
     "title": "გამაჯანსაღებელი ცენტრი",
     "location": "წყალტუბო",
     "description": "გამაჯანსარებელი ცენტრი ქალაქი წყალტუბო",
