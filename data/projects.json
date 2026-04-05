@@ -1,5 +1,14 @@
 [
   {
+    "title": "საცხოვრებელი სახლი",
+    "location": "ქუთაისი",
+    "description": "",
+    "photos": [
+      "images/g9/1.png",
+      "images/g9/2.png"
+    ]
+  },
+  {
     "title": "საცხივრებელი სახლი",
     "location": "ქუთაისი",
     "description": "",
