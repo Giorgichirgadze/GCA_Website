@@ -1,5 +1,13 @@
 [
   {
+    "title": "1",
+    "location": "2",
+    "description": "",
+    "photos": [
+      "images/g10/1.jpg"
+    ]
+  },
+  {
     "title": "საცხოვრებელი სახლი",
     "location": "ქუთაისი",
     "description": "",
